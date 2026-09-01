@@ -1,3 +1,4 @@
+import os
 import sys
 import requests
 
@@ -44,7 +45,9 @@ def fetch_work_xml(url, filename):
     response = requests.get(url)
     response.raise_for_status()
 
-    with open(filename, "wb") as f:
+    os.makedirs("works", exist_ok = True)
+
+    with open(f"works/{filename}", "wb") as f:
         f.write(response.content)
 
 if __name__ == "__main__":

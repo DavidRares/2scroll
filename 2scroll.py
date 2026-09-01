@@ -7,7 +7,7 @@ def main():
         raise Exception("Please provide a single CTS URN.")
 
     urn = sys.argv[1]
-    validate_urn(urn)
+    namespace, text_group, work, version = validate_urn(urn)
 
 
 def validate_urn(urn):
@@ -29,7 +29,12 @@ def validate_urn(urn):
 
     if len(work_id_arr) != 3:
         raise Exception("work_id improperly formatted.")
-
     
+    WORK_PREFIX = ["phi", "tlg"]
+    if not work_id_arr[0].startswith(tuple(WORK_PREFIX)) or not work_id_arr[1].startswith(tuple(WORK_PREFIX)) or not work_id_arr[2].startswith("perseus-"):
+        raise Exception("work_id not valid.")
+
+    return urn_arr[2], work_id_arr[0], work_id_arr[1], work_id_arr[2]
+
 if __name__ == "__main__":
     main()

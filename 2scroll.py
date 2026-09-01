@@ -1,14 +1,17 @@
 import sys
-
+import requests
 
 def main():
     argc = len(sys.argv)
     if argc != 2:
         raise Exception("Please provide a single CTS URN.")
 
-    urn = sys.argv[1]
-    namespace, text_group, work, version = validate_urn(urn)
+    work_urn = sys.argv[1]
+    namespace, text_group, work, version = validate_urn(work_urn)
 
+    work_url = f"https://raw.githubusercontent.com/PerseusDL/canonical-{namespace}/refs/heads/master/data/{text_group}/{work}/{text_group}.{work}.{version}.xml"
+
+    fetch_work_xml(work_url, f"{text_group}.{work}.{version}.xml")
 
 def validate_urn(urn):
     #valid example urn:cts:greekLit:tlg0007.tlg097.perseus-eng1
@@ -35,6 +38,14 @@ def validate_urn(urn):
         raise Exception("work_id not valid.")
 
     return urn_arr[2], work_id_arr[0], work_id_arr[1], work_id_arr[2]
+
+def fetch_work_xml(url, filename):
+
+    response = requests.get(url)
+    response.raise_for_status()
+
+    with open(filename, "wb") as f:
+        f.write(response.content)
 
 if __name__ == "__main__":
     main()

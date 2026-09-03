@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+from lxml import etree
 
 def main():
     argc = len(sys.argv)
@@ -11,8 +12,21 @@ def main():
     namespace, text_group, work, version = validate_urn(work_urn)
 
     work_url = f"https://raw.githubusercontent.com/PerseusDL/canonical-{namespace}/refs/heads/master/data/{text_group}/{work}/{text_group}.{work}.{version}.xml"
+    work_path = f"works/{text_group}.{work}.{version}.xml"
 
-    fetch_work_xml(work_url, f"{text_group}.{work}.{version}.xml")
+    if not os.path.exists(work_path):
+        print("fetching...")
+        fetch_work_xml(work_url, work_path)
+
+    xml_parser = etree.XMLParser(remove_comments = True, ns_clean = True, remove_blank_text = True, remove_pis = True)
+    xml_tree = etree.parse(work_path, xml_parser)
+
+    root = xml_tree.getroot()
+    ns_uri = etree.QName(root).namespace
+    ns = {"tei": ns_uri}
+
+    title_data = fetch_title_stmt_data(xml_tree, ns)
+    print(title_data["title"])
 
 def validate_urn(urn):
     #valid example urn:cts:greekLit:tlg0007.tlg097.perseus-eng1
@@ -40,15 +54,25 @@ def validate_urn(urn):
 
     return urn_arr[2], work_id_arr[0], work_id_arr[1], work_id_arr[2]
 
-def fetch_work_xml(url, filename):
-
+def fetch_work_xml(url, path):
     response = requests.get(url)
     response.raise_for_status()
 
     os.makedirs("works", exist_ok = True)
 
-    with open(f"works/{filename}", "wb") as f:
+    with open(path, "wb") as f:
         f.write(response.content)
+
+def fetch_title_stmt_data(xml_tree, ns):
+    title_stmt = xml_tree.find(".//tei:titleStmt", namespaces=ns)
+
+    if title_stmt is None:
+        raise Exception("No title statement found.")
+
+    return {
+        child.tag.split("}")[-1]: " ".join(child.itertext()).strip()
+        for child in title_stmt
+    }
 
 if __name__ == "__main__":
     main()
